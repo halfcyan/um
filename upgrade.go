@@ -46,7 +46,7 @@ func getCurrentReleaseVersion() (string, error) {
 	if err != nil {
 		return "", err
 	}
-  return release["VERSION_ID"], nil
+	return release["VERSION_ID"], nil
 }
 
 // getNextReleaseVersion calculates the next upgrade jump.
@@ -65,7 +65,12 @@ func getNextReleaseVersion(currentVersion string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
@@ -102,7 +107,7 @@ func getNextReleaseVersion(currentVersion string) (string, error) {
 	curN, curIsNum := parseMajorVersionInt(currentVersion)
 
 	if curN == 0 {
-		return "", fmt.Errorf("Cannot detect current version from /etc/os-release (VERSION_ID=%q)", currentVersion)
+		return "", fmt.Errorf("cannot detect current version from /etc/os-release (VERSION_ID=%q)", currentVersion)
 	}
 
 	// If currentVersion is not numeric (e.g., "devel"), treat it as "before everything".
@@ -143,11 +148,11 @@ func runCommand(name string, args ...string) error {
 }
 
 type PackageUpdate struct {
-	Name        string `json:"name"`
-	Source      string `json:"source"`
-	OldVersion  string `json:"old_version"`
-	NewVersion  string `json:"new_version"`
-	Icon        string `json:"icon"`
+	Name       string `json:"name"`
+	Source     string `json:"source"`
+	OldVersion string `json:"old_version"`
+	NewVersion string `json:"new_version"`
+	Icon       string `json:"icon"`
 }
 
 type PackageUpdatesResponse struct {
@@ -158,7 +163,8 @@ func commandOutput(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	output, err := cmd.Output()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			return "", fmt.Errorf("%s failed: %s", name, strings.TrimSpace(string(exitErr.Stderr)))
 		}
 		return "", err
