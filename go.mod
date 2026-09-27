@@ -5,6 +5,7 @@ go 1.23.0
 toolchain go1.23.7
 
 require (
+	github.com/BurntSushi/toml v1.6.0
 	github.com/Wifx/gonetworkmanager v0.5.0
 	github.com/acobaugh/osrelease v0.1.0
 	github.com/charmbracelet/huh v0.6.0
@@ -16,7 +17,6 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/charmbracelet/colorprofile v0.3.0 // indirect
 	github.com/charmbracelet/x/ansi v0.8.0 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
