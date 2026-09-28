@@ -107,7 +107,7 @@ func getNextReleaseVersion(currentVersion string) (string, error) {
 	curN, curIsNum := parseMajorVersionInt(currentVersion)
 
 	if curN == 0 {
-		return "", fmt.Errorf("cannot detect current version from /etc/os-release (VERSION_ID=%q)", currentVersion)
+		return "", fmt.Errorf("Cannot detect current version from /etc/os-release (VERSION_ID=%q)", currentVersion)
 	}
 
 	// If currentVersion is not numeric (e.g., "devel"), treat it as "before everything".
