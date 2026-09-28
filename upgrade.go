@@ -160,11 +160,20 @@ type PackageUpdatesResponse struct {
 }
 
 func commandOutput(name string, args ...string) (string, error) {
+	return commandOutputWithExitCodes(name, nil, args...)
+}
+
+func commandOutputWithExitCodes(name string, allowedExitCodes []int, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	output, err := cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
+			for _, allowedExitCode := range allowedExitCodes {
+				if exitErr.ExitCode() == allowedExitCode {
+					return strings.TrimSpace(string(output)), nil
+				}
+			}
 			return "", fmt.Errorf("%s failed: %s", name, strings.TrimSpace(string(exitErr.Stderr)))
 		}
 		return "", err
@@ -176,13 +185,13 @@ func packageUpdates() (PackageUpdatesResponse, error) {
 	response := PackageUpdatesResponse{Updates: []PackageUpdate{}}
 
 	if _, err := exec.LookPath("dnf"); err == nil {
-		output, err := commandOutput("dnf", "--refresh", "repoquery", "--upgrades", "--qf", "%{name}\\t%{evr}\\t%{repoid}")
+		output, err := commandOutputWithExitCodes("dnf", []int{100}, "--refresh", "check-update")
 		if err != nil {
 			return response, err
 		}
-		for _, line := range strings.Split(output, "\\n") {
-			fields := strings.Split(line, "\\t")
-			if len(fields) != 3 || fields[0] == "" {
+		for _, line := range strings.Split(output, "\n") {
+			fields := strings.Fields(line)
+			if len(fields) < 3 || !strings.Contains(fields[0], ".") || fields[0] == "Package" {
 				continue
 			}
 			oldVersion, _ := commandOutput("rpm", "-q", "--qf", "%{EVR}", fields[0])
@@ -198,8 +207,8 @@ func packageUpdates() (PackageUpdatesResponse, error) {
 		if err != nil {
 			return response, err
 		}
-		for _, line := range strings.Split(output, "\\n") {
-			fields := strings.Split(line, "\\t")
+		for _, line := range strings.Split(output, "\n") {
+			fields := strings.Split(line, "\t")
 			if len(fields) < 3 || fields[0] == "" || fields[0] == "Application" {
 				continue
 			}
