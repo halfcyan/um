@@ -18,8 +18,7 @@ var Envars = []string{
 }
 
 func listTweaks(c *cli.Context) error {
-	// Listing only reads metadata and world-readable state, so no escalation
-	// is needed. This lets GUI frontends query tweaks without a password prompt.
+	// listing only reads world-readable state, so it doesn't escalate
 	tweakList, err := tweaks.List()
 	if err != nil {
 		return err

@@ -7,20 +7,14 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// isInteractive reports whether stdin is a terminal, i.e. whether sudo can prompt.
 func isInteractive() bool {
 	_, err := unix.IoctlGetTermios(int(os.Stdin.Fd()), unix.TCGETS)
 	return err == nil
 }
 
-// SudoIfNeeded re-executes um as root if it isn't already.
-//
-// From a terminal it uses sudo and forwards forwardEnv. Without a terminal (e.g.
-// when started by the Plasma KCMs) sudo can't prompt, so it uses pkexec, which
-// shows a graphical polkit prompt. pkexec runs um with a clean environment and
-// forwardEnv is not forwarded: wrapping um in `env` would stop the polkit action
-// for /usr/bin/um from matching. pkexec exits with 126 if the prompt is dismissed
-// and 127 if authorization fails.
+// SudoIfNeeded re-executes um as root via sudo, or pkexec when there's no
+// terminal (e.g. from a KCM). pkexec drops forwardEnv because wrapping um in
+// `env` would break the polkit action match. it exits 126 or 127 on auth failure.
 func SudoIfNeeded(forwardEnv []string) {
 	if os.Getuid() == 0 {
 		return

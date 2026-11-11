@@ -163,9 +163,6 @@ func List() (map[string]Tweak, error) {
 	return tweaks, nil
 }
 
-// StatePath returns the directory where tweak state markers are stored.
-// Markers are world-readable so unprivileged frontends (e.g. the Plasma
-// Tweaks KCM) can show which tweaks are enabled without escalating.
 func StatePath() string {
 	return util.GetStateDir() + "/tweaks"
 }
@@ -178,8 +175,7 @@ func (t Tweak) stateFile() string {
 	return filepath.Join(StatePath(), t.ID()+".enabled")
 }
 
-// Enabled reports whether a toggle tweak is enabled, or whether a oneshot
-// tweak has been applied. Script tweaks never have state.
+// Enabled also reports true for oneshot tweaks that have been applied
 func (t Tweak) Enabled() bool {
 	if t.TweakType == TweakTypeScript {
 		return false
@@ -201,9 +197,7 @@ func (t Tweak) setEnabled(enabled bool) error {
 	if err := os.WriteFile(t.stateFile(), nil, 0644); err != nil {
 		return err
 	}
-	// Modes passed above are filtered by the umask (which sudo may carry
-	// over from the user), so set them explicitly: unprivileged frontends
-	// must be able to read the state.
+	// sudo can carry over a restrictive umask, and frontends read this unprivileged
 	if err := os.Chmod(StatePath(), 0755); err != nil {
 		return err
 	}
@@ -211,7 +205,6 @@ func (t Tweak) setEnabled(enabled bool) error {
 }
 
 func (t Tweak) runPlaybook(playbook string) error {
-	// run ansible-playbook <playbook> --connection=local from the tweak directory
 	cmd := exec.Command("/usr/bin/ansible-playbook", "--connection=local", filepath.Join(t.Path, playbook))
 	cmd.Dir = t.Path
 	cmd.Stdin = os.Stdin
@@ -267,8 +260,7 @@ func (t Tweak) Run() error {
 	return nil
 }
 
-// ListEntry is the machine-readable representation of a tweak, used by
-// `um tweaks list --json`.
+// ListEntry is a tweak as printed by `um tweaks list --json`
 type ListEntry struct {
 	ID          string `json:"id"`
 	Description string `json:"description"`
@@ -278,7 +270,6 @@ type ListEntry struct {
 	Enabled     bool   `json:"enabled"`
 }
 
-// SortedEntries returns all tweaks as list entries, sorted by ID.
 func SortedEntries(tweaks map[string]Tweak) []ListEntry {
 	entries := make([]ListEntry, 0, len(tweaks))
 	for id, t := range tweaks {
